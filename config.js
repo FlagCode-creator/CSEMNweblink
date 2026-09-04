@@ -10,6 +10,6 @@
  *    สำหรับ "หน้ารวมลิงก์ส่วนตัว" ความเสี่ยงต่ำ แต่อย่าใส่ข้อมูลลับในลิงก์
  */
 window.LINKHOME_CONFIG = {
-  syncUrl: "",   // เช่น "https://script.google.com/macros/s/AKfycbx..../exec"
-  syncToken: ""  // ต้องตรงกับค่า TOKEN ใน backend/code.gs
+  syncUrl: "https://script.google.com/macros/s/AKfycbxAk7lXbEtnd71ED6jA0vsng5U9dKzhNMNGo24q5G2fYYRK8u3vRjowkVU9y7DiY3XgOA/exec",
+  syncToken: "2809"  // ต้องตรงกับค่า TOKEN ใน backend/code.gs
 };

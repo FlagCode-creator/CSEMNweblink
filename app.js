@@ -640,6 +640,11 @@
   $("#emptyAddBtn").addEventListener("click", () => openDialog(null));
   search.addEventListener("input", render);
 
+  const helpDialog = $("#helpDialog");
+  $("#helpBtn").addEventListener("click", () => helpDialog.showModal());
+  $("#closeHelp").addEventListener("click", () => helpDialog.close());
+  $("#helpOk").addEventListener("click", () => helpDialog.close());
+
   menu.addEventListener("click", (e) => {
     const action = e.target.dataset.action;
     if (!action) return;

@@ -46,6 +46,9 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.58z"/></svg>
           <span class="btn-label">แก้ไข</span>
         </button>
+        <button id="helpBtn" class="btn" title="คู่มือการใช้งาน" aria-label="คู่มือการใช้งาน">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15.5h-2v-2h2v2zm1.6-6.2c-.5.5-1.1.9-1.3 1.3-.2.3-.3.7-.3 1.4h-2c0-1 .2-1.6.7-2.1.4-.4 1-.8 1.3-1.2.4-.5.3-1.3-.3-1.7-.6-.4-1.6-.3-1.9.4-.1.3-.2.6-.2.9H8.6c0-1.7 1.3-3 3.3-3 1.9 0 3.2 1.1 3.2 2.7 0 .7-.3 1.3-.5 1.6z"/></svg>
+        </button>
         <button id="menuBtn" class="btn" title="เมนู" aria-haspopup="true" aria-expanded="false">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
         </button>
@@ -72,6 +75,8 @@
         <button id="emptyAddBtn" class="btn primary big">➕ เพิ่มลิงก์</button>
       </div>
     </div>
+
+    <footer class="credit">Link Home · By KruFlag</footer>
   </main>
 
   <button id="fabAdd" class="fab" title="เพิ่มลิงก์" aria-label="เพิ่มลิงก์">
@@ -159,6 +164,29 @@
         </span>
       </div>
     </form>
+  </dialog>
+
+  <!-- Help / manual dialog -->
+  <dialog id="helpDialog" class="dialog">
+    <div class="help-body">
+      <div class="dialog-head">
+        <h2>📖 วิธีใช้งาน</h2>
+        <button type="button" class="icon-btn" id="closeHelp" aria-label="ปิด">✕</button>
+      </div>
+      <ul class="help-list">
+        <li><b>เปิดลิงก์</b> — แตะที่ไอคอนได้เลย</li>
+        <li><b>เพิ่มลิงก์</b> — กดปุ่ม <b>＋</b> มุมขวาล่าง (หรือเมนู ⋮ → เพิ่มลิงก์)</li>
+        <li><b>จัดตำแหน่งไอคอน</b> — <b>กดค้าง</b>ที่ไอคอนจนสั่น แล้วลากย้าย • วางใกล้ช่องไหนก็ลงช่องนั้น • แตะพื้นที่ว่างเมื่อเสร็จ
+          <br><span class="muted small">ตำแหน่งนี้เป็นของเครื่องคุณเอง ไม่กระทบคนอื่น</span></li>
+        <li><b>แก้ไข / ลบ</b> — กดปุ่ม <b>✏️ แก้ไข</b> แล้วแตะไอคอนเพื่อแก้ หรือกด <b>✕</b> เพื่อลบ
+          <br><span class="muted small">การเพิ่ม/แก้/ลบ จะซิงก์ให้ทุกเครื่อง</span></li>
+        <li><b>สถานะซิงก์</b> — จุดข้างชื่อ: 🟢 ซิงก์แล้ว · 🟡 กำลังซิงก์ · 🔴 เชื่อมต่อไม่ได้</li>
+        <li><b>ติดตั้งลงหน้าจอโฮม</b> — เมนูเบราว์เซอร์ → “Add to Home Screen / เพิ่มลงในหน้าจอหลัก”</li>
+      </ul>
+      <div class="dialog-foot">
+        <button type="button" class="btn primary" id="helpOk">เข้าใจแล้ว</button>
+      </div>
+    </div>
   </dialog>
 
   <input id="importFile" type="file" accept="application/json,.json" hidden />

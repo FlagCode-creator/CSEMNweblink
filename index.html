@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1020" />
+  <meta name="description" content="หน้าจอโฮมรวมลิงก์ส่วนตัว — เพิ่มไอคอนและลิงก์เองได้ ใช้เป็นเว็บแอพบนหน้าจอโฮมได้" />
+
+  <title>Link Home — หน้าจอรวมลิงก์</title>
+
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Link Home" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wallpaper" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <h1 id="pageTitle">Link Home</h1>
+        <span id="syncDot" class="sync-dot" title="สถานะซิงก์" hidden></span>
+      </div>
+
+      <div class="search-wrap">
+        <svg class="search-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4a6 6 0 1 0 3.9 10.6l4.7 4.7 1.4-1.4-4.7-4.7A6 6 0 0 0 10 4zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/></svg>
+        <input id="search" type="search" inputmode="search" placeholder="ค้นหาลิงก์…" autocomplete="off" aria-label="ค้นหาลิงก์" />
+      </div>
+
+      <div class="actions">
+        <button id="editBtn" class="btn" title="แก้ไข" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.58z"/></svg>
+          <span class="btn-label">แก้ไข</span>
+        </button>
+        <button id="menuBtn" class="btn" title="เมนู" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="menu" class="menu" role="menu" hidden>
+      <button class="menu-item" data-action="add" role="menuitem">➕ เพิ่มลิงก์ใหม่</button>
+      <button class="menu-item" data-action="sync" role="menuitem">🔄 ตั้งค่าซิงก์ (Google Sheet)</button>
+      <button class="menu-item" data-action="export" role="menuitem">⬇️ สำรองข้อมูล (Export)</button>
+      <button class="menu-item" data-action="import" role="menuitem">⬆️ นำเข้าข้อมูล (Import)</button>
+      <button class="menu-item danger" data-action="reset" role="menuitem">🗑️ ล้างทั้งหมด</button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div id="grid" class="grid" aria-label="รายการลิงก์"></div>
+
+    <div id="empty" class="empty" hidden>
+      <div class="empty-card">
+        <div class="empty-emoji">🔗</div>
+        <h2>ยังไม่มีลิงก์</h2>
+        <p>กดปุ่มด้านล่างเพื่อเพิ่มลิงก์แรกของคุณ</p>
+        <button id="emptyAddBtn" class="btn primary big">➕ เพิ่มลิงก์</button>
+      </div>
+    </div>
+  </main>
+
+  <button id="fabAdd" class="fab" title="เพิ่มลิงก์" aria-label="เพิ่มลิงก์">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>
+  </button>
+
+  <!-- Add / Edit dialog -->
+  <dialog id="linkDialog" class="dialog">
+    <form id="linkForm" method="dialog">
+      <div class="dialog-head">
+        <h2 id="dialogTitle">เพิ่มลิงก์</h2>
+        <button type="button" class="icon-btn" id="closeDialog" aria-label="ปิด">✕</button>
+      </div>
+
+      <div class="field">
+        <label for="fName">ชื่อ</label>
+        <input id="fName" name="name" type="text" required maxlength="40" placeholder="เช่น GitHub ของฉัน" />
+      </div>
+
+      <div class="field">
+        <label for="fUrl">ลิงก์ (URL)</label>
+        <input id="fUrl" name="url" type="text" required inputmode="url" autocapitalize="off" spellcheck="false" placeholder="example.com หรือ https://example.com" />
+      </div>
+
+      <div class="field">
+        <label>ไอคอน</label>
+        <div id="dropZone" class="dropzone" tabindex="0" role="button" aria-label="อัปโหลดหรือวางรูปไอคอน">
+          <img id="iconPreview" class="icon-preview" alt="" hidden />
+          <div id="dropHint" class="drop-hint">
+            <div class="drop-emoji">🖼️</div>
+            <p><strong>เลือกรูป</strong> / ลากวาง / วาง (Ctrl+V)</p>
+            <p class="muted">แนะนำรูปสี่เหลี่ยมจัตุรัส ≤ 512px</p>
+          </div>
+          <input id="fFile" type="file" accept="image/*" hidden />
+        </div>
+        <div class="icon-tools">
+          <button type="button" class="btn tiny" id="pickFile">เลือกไฟล์</button>
+          <button type="button" class="btn tiny" id="useFavicon">ใช้ favicon จาก URL</button>
+          <button type="button" class="btn tiny ghost" id="clearIcon">ล้างรูป</button>
+        </div>
+        <p class="muted small">ถ้าไม่ใส่รูป จะใช้ตัวอักษรแรกของชื่อเป็นไอคอนให้อัตโนมัติ</p>
+      </div>
+
+      <input type="hidden" id="fIconData" name="icon" />
+      <input type="hidden" id="fId" name="id" />
+
+      <div class="dialog-foot">
+        <button type="button" class="btn" id="cancelBtn">ยกเลิก</button>
+        <button type="submit" class="btn primary" id="saveBtn">บันทึก</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Sync settings dialog -->
+  <dialog id="syncDialog" class="dialog">
+    <form id="syncForm" method="dialog">
+      <div class="dialog-head">
+        <h2>🔄 ตั้งค่าซิงก์ (Google Sheet)</h2>
+        <button type="button" class="icon-btn" id="closeSync" aria-label="ปิด">✕</button>
+      </div>
+
+      <p class="muted small" style="margin-top:0">
+        ซิงก์ลิงก์ข้ามอุปกรณ์ผ่าน Google Apps Script + Google Sheet
+        ดูวิธีตั้งค่าฝั่ง Google ได้ในไฟล์ <code>backend/code.gs</code>
+      </p>
+
+      <div class="field">
+        <label for="syncUrl">Web app URL (ลงท้าย /exec)</label>
+        <input id="syncUrl" type="text" inputmode="url" autocapitalize="off" spellcheck="false"
+               placeholder="https://script.google.com/macros/s/XXXX/exec" />
+      </div>
+
+      <div class="field">
+        <label for="syncToken">รหัสลับ (TOKEN — ต้องตรงกับใน code.gs)</label>
+        <input id="syncToken" type="text" autocapitalize="off" spellcheck="false" placeholder="รหัสลับของคุณ" />
+      </div>
+
+      <div id="syncState" class="sync-state muted small">ยังไม่ได้เชื่อมต่อ</div>
+
+      <div class="dialog-foot" style="justify-content:space-between">
+        <button type="button" class="btn ghost danger" id="syncDisconnect">ยกเลิกการซิงก์</button>
+        <span style="display:flex; gap:10px">
+          <button type="button" class="btn" id="syncTest">ทดสอบ</button>
+          <button type="button" class="btn primary" id="syncSave">บันทึก & ซิงก์</button>
+        </span>
+      </div>
+    </form>
+  </dialog>
+
+  <input id="importFile" type="file" accept="application/json,.json" hidden />
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

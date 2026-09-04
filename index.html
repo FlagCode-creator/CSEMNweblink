@@ -8,6 +8,13 @@
 
   <title>Link Home — หน้าจอรวมลิงก์</title>
 
+  <!-- speed: warm up the sync backend connection + fetch app scripts early -->
+  <link rel="preconnect" href="https://script.google.com" crossorigin />
+  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin />
+  <link rel="dns-prefetch" href="https://script.google.com" />
+  <link rel="preload" href="config.js" as="script" />
+  <link rel="preload" href="app.js" as="script" />
+
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />

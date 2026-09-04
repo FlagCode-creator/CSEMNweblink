@@ -135,9 +135,12 @@
         await push();
         return;
       }
-      items = remote;
-      save();
-      render();
+      // only re-render when the cloud data actually differs from what's shown
+      if (JSON.stringify(remote) !== JSON.stringify(items)) {
+        items = remote;
+        save();
+        render();
+      }
       setSyncStatus("ok", "ซิงก์แล้ว • " + timeNow());
     } catch (e) {
       setSyncStatus("err", "ดึงข้อมูลไม่ได้ (ใช้ข้อมูลในเครื่อง): " + e.message);

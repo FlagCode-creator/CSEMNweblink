@@ -213,6 +213,7 @@
       tile.target = "_blank";
       tile.rel = "noopener noreferrer";
       tile.dataset.id = it.id;
+      tile.draggable = false; // we handle dragging ourselves (prevents native link drag)
       tile.setAttribute("aria-label", it.name);
 
       const icon = document.createElement("div");
@@ -353,13 +354,75 @@
   }
 
   function beginDrag(tile, x, y, pointerId, immediate) {
-    drag = { id: tile.dataset.id, el: tile, startX: x, startY: y, active: false, pointerId };
-    if (immediate) {
-      drag.active = true;
-      tile.classList.add("dragging");
-      try { grid.setPointerCapture(pointerId); } catch {}
+    drag = { el: tile, startX: x, startY: y, active: false, pointerId, clone: null, grabDX: 0, grabDY: 0 };
+    if (immediate) activateDrag(x, y);
+  }
+
+  // lift the tile: make a floating copy that follows the pointer, leave a dashed gap
+  function activateDrag(x, y) {
+    if (!drag || drag.active) return;
+    drag.active = true;
+    const el = drag.el;
+    const r = el.getBoundingClientRect();
+    drag.grabDX = x - r.left;
+    drag.grabDY = y - r.top;
+    const clone = el.cloneNode(true);
+    clone.className = "tile drag-clone";
+    clone.style.width = r.width + "px";
+    clone.style.height = r.height + "px";
+    drag.clone = clone;
+    document.body.appendChild(clone);
+    moveClone(x, y);
+    el.classList.add("placeholder");
+    try { grid.setPointerCapture(drag.pointerId); } catch {}
+  }
+
+  function moveClone(x, y) {
+    if (drag && drag.clone) {
+      drag.clone.style.left = (x - drag.grabDX) + "px";
+      drag.clone.style.top = (y - drag.grabDY) + "px";
     }
   }
+
+  // nearest slot to the pointer — works in the gaps, not only on top of a tile
+  function slotRef(x, y) {
+    const tiles = [...grid.querySelectorAll(".tile:not(.placeholder)")];
+    let best = null, bestD = Infinity;
+    for (const t of tiles) {
+      const r = t.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const d = (x - cx) ** 2 + (y - cy) ** 2;
+      if (d < bestD) { bestD = d; best = { t, cx, cy, r }; }
+    }
+    if (!best) return null;
+    const after = y > best.cy + best.r.height / 2 ||
+      (y >= best.cy - best.r.height / 2 && x > best.cx);
+    return after ? best.t.nextSibling : best.t;
+  }
+
+  // move the dragged tile to a new slot; slide the others there (FLIP animation)
+  function reorderTo(ref) {
+    const el = drag.el;
+    if (ref === el || ref === el.nextSibling) return;
+    const movers = [...grid.querySelectorAll(".tile")];
+    const first = new Map(movers.map((t) => [t, t.getBoundingClientRect()]));
+    grid.insertBefore(el, ref);
+    for (const t of movers) {
+      if (t === el) continue;
+      const a = first.get(t), b = t.getBoundingClientRect();
+      const dx = a.left - b.left, dy = a.top - b.top;
+      if (dx || dy) {
+        t.style.transition = "none";
+        t.style.transform = `translate(${dx}px, ${dy}px)`;
+        requestAnimationFrame(() => {
+          t.style.transition = "transform .18s ease";
+          t.style.transform = "";
+        });
+      }
+    }
+  }
+
+  grid.addEventListener("dragstart", (e) => e.preventDefault()); // stop native <a> drag on desktop
 
   grid.addEventListener("pointerdown", (e) => {
     suppressClick = false;
@@ -370,54 +433,56 @@
     if (editing || reordering) {
       beginDrag(tile, e.clientX, e.clientY, e.pointerId, false);
     } else {
-      // hold ~0.45s to enter rearrange mode, then start dragging this tile
+      // hold ~0.4s to enter rearrange mode, then lift & drag this tile
       lp = {
         tile, x: e.clientX, y: e.clientY, pointerId: e.pointerId,
         timer: setTimeout(() => {
           lp = null;
           setReordering(true);
           beginDrag(tile, e.clientX, e.clientY, e.pointerId, true);
-        }, 450),
+        }, 400),
       };
     }
   });
 
   grid.addEventListener("pointermove", (e) => {
     if (lp && lp.timer && e.pointerId === lp.pointerId) {
-      // moved before the long-press fired → it's a tap/scroll, cancel
       if (Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) { clearTimeout(lp.timer); lp = null; }
       return;
     }
     if (!drag || e.pointerId !== drag.pointerId) return;
-    const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
-    if (!drag.active && Math.hypot(dx, dy) < 8) return;
     if (!drag.active) {
-      drag.active = true;
-      drag.el.classList.add("dragging");
-      try { grid.setPointerCapture(drag.pointerId); } catch {}
+      if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 8) return;
+      activateDrag(e.clientX, e.clientY);
     }
     e.preventDefault();
-    const over = document.elementFromPoint(e.clientX, e.clientY);
-    const target = over && over.closest(".tile");
-    if (target && target !== drag.el) {
-      const rect = target.getBoundingClientRect();
-      const after = e.clientY > rect.top + rect.height / 2 ||
-        (Math.abs(e.clientY - (rect.top + rect.height / 2)) < 4 && e.clientX > rect.left + rect.width / 2);
-      grid.insertBefore(drag.el, after ? target.nextSibling : target);
-    }
+    moveClone(e.clientX, e.clientY);
+    reorderTo(slotRef(e.clientX, e.clientY));
   });
 
   function endPointer() {
     if (lp && lp.timer) { clearTimeout(lp.timer); lp = null; }
     if (!drag) return;
     const wasActive = drag.active;
-    drag.el.classList.remove("dragging");
+    const { el, clone } = drag;
     try { grid.releasePointerCapture(drag.pointerId); } catch {}
     if (wasActive) {
       suppressClick = true;
-      // save this device's personal order from the DOM (local only — not pushed)
+      // save this device's personal order from the DOM (local only — never pushed)
       order = [...grid.querySelectorAll(".tile")].map((t) => t.dataset.id);
       saveOrder();
+      // settle the lifted copy into its final slot, then clean up
+      if (clone && el) {
+        const r = el.getBoundingClientRect();
+        clone.style.transition = "left .16s ease, top .16s ease, transform .16s ease";
+        clone.style.left = r.left + "px";
+        clone.style.top = r.top + "px";
+        clone.style.transform = "scale(1)";
+        setTimeout(() => { clone.remove(); el.classList.remove("placeholder"); }, 160);
+      }
+    } else {
+      if (clone) clone.remove();
+      if (el) el.classList.remove("placeholder");
     }
     drag = null;
   }
@@ -440,7 +505,7 @@
 
   // tap empty space to leave rearrange mode
   document.addEventListener("pointerdown", (e) => {
-    if (reordering && !e.target.closest(".tile") && !e.target.closest(".dialog") && !e.target.closest(".menu")) {
+    if (reordering && !drag && !e.target.closest(".tile") && !e.target.closest(".dialog") && !e.target.closest(".menu")) {
       setReordering(false);
     }
   });

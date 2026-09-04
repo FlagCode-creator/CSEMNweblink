@@ -261,6 +261,27 @@ code {
 .reordering .tile { cursor: grab; touch-action: none; }  /* touch-action:none lets touch drag instead of scroll */
 .tile.dragging { opacity: 0.5; }
 .tile.dragging .tile-icon { animation: none; }
+
+/* the lifted, floating copy that follows the finger/cursor */
+.drag-clone {
+  position: fixed;
+  z-index: 200;
+  margin: 0;
+  pointer-events: none;
+  transform: scale(1.12);
+  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.45));
+  opacity: 0.97;
+}
+.drag-clone .tile-icon { animation: none !important; }
+/* the empty slot left behind — a dashed frame showing where it will drop */
+.tile.placeholder .tile-icon {
+  background: transparent;
+  border: 2px dashed var(--tile-border);
+  box-shadow: none;
+  animation: none;
+}
+.tile.placeholder .tile-icon > * { visibility: hidden; }
+.tile.placeholder .tile-name { visibility: hidden; }
 @keyframes jiggle {
   from { transform: rotate(-1.4deg); }
   to { transform: rotate(1.4deg); }

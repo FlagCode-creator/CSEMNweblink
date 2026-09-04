@@ -1,6 +1,6 @@
 /* Service worker: cache the app shell so it works offline.
    Bump CACHE when you change any shell file. */
-const CACHE = "link-home-v6";
+const CACHE = "link-home-v7";
 const SHELL = [
   "./",
   "./index.html",

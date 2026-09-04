@@ -5,11 +5,14 @@
 
   const STORAGE_KEY = "linkhome.items.v1";
   const SYNC_KEY = "linkhome.sync.v1";
+  const ORDER_KEY = "linkhome.order.v1"; // per-viewer icon order (local only)
   const MAX_ICON_PX = 256; // uploaded images are downscaled to this square
 
   /** @type {{id:string,name:string,url:string,icon:string}[]} */
   let items = [];
   let editing = false;
+  let reordering = false;   // iOS-like rearrange mode (entered by long-press)
+  let order = [];           // preferred icon order for THIS device only
   /** @type {{url:string, token:string}|null} */
   let sync = null;
 
@@ -57,6 +60,23 @@
     } catch (e) {
       toast("บันทึกไม่สำเร็จ — พื้นที่เก็บข้อมูลอาจเต็ม (ลองใช้รูปเล็กลง)");
     }
+  }
+
+  // ---------- personal icon order (local to this device, never synced) ----------
+  function loadOrder() {
+    try { const r = localStorage.getItem(ORDER_KEY); const a = r ? JSON.parse(r) : []; order = Array.isArray(a) ? a : []; }
+    catch { order = []; }
+  }
+  function saveOrder() { try { localStorage.setItem(ORDER_KEY, JSON.stringify(order)); } catch {} }
+  // items sorted by this viewer's saved order; unknown/new items keep their natural order at the end
+  function orderedItems() {
+    if (!order.length) return items.slice();
+    const pos = new Map(order.map((id, i) => [id, i]));
+    return items.slice().sort((a, b) => {
+      const pa = pos.has(a.id) ? pos.get(a.id) : Infinity;
+      const pb = pos.has(b.id) ? pos.get(b.id) : Infinity;
+      return pa - pb;
+    });
   }
 
   // ---------- sync (Google Sheet via Apps Script) ----------
@@ -175,9 +195,10 @@
   // ---------- render ----------
   function render() {
     const q = search.value.trim().toLowerCase();
+    const base = orderedItems();
     const list = q
-      ? items.filter((it) => it.name.toLowerCase().includes(q) || it.url.toLowerCase().includes(q))
-      : items;
+      ? base.filter((it) => it.name.toLowerCase().includes(q) || it.url.toLowerCase().includes(q))
+      : base;
 
     grid.innerHTML = "";
     empty.hidden = items.length > 0;
@@ -314,29 +335,63 @@
     img.src = srcDataUrl;
   }
 
-  // ---------- drag & drop reorder (pointer based, works on touch) ----------
+  // ---------- reorder: iOS-like, PERSONAL layout saved locally ----------
+  // Long-press an icon to enter rearrange mode (icons jiggle), then drag to move.
+  // The new order is saved per-device (localStorage) and is NOT synced to the cloud,
+  // so each visitor arranges their own home screen without changing anyone else's.
   let drag = null;
+  let lp = null;             // pending long-press
+  let suppressClick = false;
+
+  function setReordering(on) {
+    reordering = on;
+    document.body.classList.toggle("reordering", on);
+    if (on) toast("ลากไอคอนเพื่อจัดตำแหน่งของคุณเอง • แตะพื้นที่ว่างเมื่อเสร็จ");
+  }
+
+  function beginDrag(tile, x, y, pointerId, immediate) {
+    drag = { id: tile.dataset.id, el: tile, startX: x, startY: y, active: false, pointerId };
+    if (immediate) {
+      drag.active = true;
+      tile.classList.add("dragging");
+      try { grid.setPointerCapture(pointerId); } catch {}
+    }
+  }
+
   grid.addEventListener("pointerdown", (e) => {
-    if (!editing) return;
+    suppressClick = false;
     const tile = e.target.closest(".tile");
     if (!tile || e.target.closest(".badge")) return;
-    drag = {
-      id: tile.dataset.id,
-      el: tile,
-      startX: e.clientX,
-      startY: e.clientY,
-      active: false,
-      pointerId: e.pointerId,
-    };
+    if (search.value.trim()) return; // don't rearrange a filtered view
+
+    if (editing || reordering) {
+      beginDrag(tile, e.clientX, e.clientY, e.pointerId, false);
+    } else {
+      // hold ~0.45s to enter rearrange mode, then start dragging this tile
+      lp = {
+        tile, x: e.clientX, y: e.clientY, pointerId: e.pointerId,
+        timer: setTimeout(() => {
+          lp = null;
+          setReordering(true);
+          beginDrag(tile, e.clientX, e.clientY, e.pointerId, true);
+        }, 450),
+      };
+    }
   });
+
   grid.addEventListener("pointermove", (e) => {
+    if (lp && lp.timer && e.pointerId === lp.pointerId) {
+      // moved before the long-press fired → it's a tap/scroll, cancel
+      if (Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) { clearTimeout(lp.timer); lp = null; }
+      return;
+    }
     if (!drag || e.pointerId !== drag.pointerId) return;
     const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
     if (!drag.active && Math.hypot(dx, dy) < 8) return;
     if (!drag.active) {
       drag.active = true;
       drag.el.classList.add("dragging");
-      grid.setPointerCapture(drag.pointerId);
+      try { grid.setPointerCapture(drag.pointerId); } catch {}
     }
     e.preventDefault();
     const over = document.elementFromPoint(e.clientX, e.clientY);
@@ -348,31 +403,42 @@
       grid.insertBefore(drag.el, after ? target.nextSibling : target);
     }
   });
-  function endDrag() {
+
+  function endPointer() {
+    if (lp && lp.timer) { clearTimeout(lp.timer); lp = null; }
     if (!drag) return;
     const wasActive = drag.active;
     drag.el.classList.remove("dragging");
     try { grid.releasePointerCapture(drag.pointerId); } catch {}
     if (wasActive) {
-      // rebuild order from DOM
-      const order = [...grid.querySelectorAll(".tile")].map((t) => t.dataset.id);
-      items.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
-      persist();
+      suppressClick = true;
+      // save this device's personal order from the DOM (local only — not pushed)
+      order = [...grid.querySelectorAll(".tile")].map((t) => t.dataset.id);
+      saveOrder();
     }
     drag = null;
   }
-  grid.addEventListener("pointerup", endDrag);
-  grid.addEventListener("pointercancel", endDrag);
+  grid.addEventListener("pointerup", endPointer);
+  grid.addEventListener("pointercancel", endPointer);
 
-  // tap in edit mode = edit; normal click follows the link
+  // Tap: edit mode opens the editor; rearrange mode ignores; otherwise follow the link.
   grid.addEventListener("click", (e) => {
     const tile = e.target.closest(".tile");
     if (!tile) return;
+    if (suppressClick) { suppressClick = false; e.preventDefault(); return; }
+    if (reordering) { e.preventDefault(); return; }
     if (editing) {
       e.preventDefault();
       if (e.target.closest(".badge")) return;
       const it = items.find((x) => x.id === tile.dataset.id);
       if (it) openDialog(it);
+    }
+  });
+
+  // tap empty space to leave rearrange mode
+  document.addEventListener("pointerdown", (e) => {
+    if (reordering && !e.target.closest(".tile") && !e.target.closest(".dialog") && !e.target.closest(".menu")) {
+      setReordering(false);
     }
   });
 
@@ -557,9 +623,12 @@
     if (item) { fileToIcon(item.getAsFile()); toast("วางรูปแล้ว"); }
   });
 
-  // close menu on Escape
+  // Escape closes menu / leaves rearrange / leaves edit mode
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") toggleMenu(false);
+    if (e.key !== "Escape") return;
+    toggleMenu(false);
+    if (reordering) setReordering(false);
+    if (editing) setEditing(false);
   });
 
   // ---------- seed on first run ----------
@@ -575,6 +644,7 @@
 
   // ---------- boot ----------
   load();
+  loadOrder();
   loadSync();
   if (sync) {
     setSyncStatus("busy", "กำลังเชื่อมต่อ…");

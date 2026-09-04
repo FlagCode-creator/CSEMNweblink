@@ -254,9 +254,11 @@ code {
   font-size: 15px; line-height: 1; cursor: pointer;
   z-index: 3;
 }
-.editing .badge { display: grid; }
-.editing .tile-icon { animation: jiggle 0.28s infinite alternate ease-in-out; }
-.editing .tile { cursor: grab; }
+.editing .badge { display: grid; }   /* delete badge only in edit mode, not in personal rearrange */
+.editing .tile-icon,
+.reordering .tile-icon { animation: jiggle 0.28s infinite alternate ease-in-out; }
+.editing .tile,
+.reordering .tile { cursor: grab; touch-action: none; }  /* touch-action:none lets touch drag instead of scroll */
 .tile.dragging { opacity: 0.5; }
 .tile.dragging .tile-icon { animation: none; }
 @keyframes jiggle {
@@ -264,7 +266,8 @@ code {
   to { transform: rotate(1.4deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .editing .tile-icon { animation: none; }
+  .editing .tile-icon,
+  .reordering .tile-icon { animation: none; }
 }
 
 /* ---------- Empty state ---------- */

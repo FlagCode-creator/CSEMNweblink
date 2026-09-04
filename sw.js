@@ -1,10 +1,11 @@
 /* Service worker: cache the app shell so it works offline.
    Bump CACHE when you change any shell file. */
-const CACHE = "link-home-v2";
+const CACHE = "link-home-v3";
 const SHELL = [
   "./",
   "./index.html",
   "./styles.css",
+  "./config.js",
   "./app.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
@@ -31,6 +32,18 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+
+  // config.js: network-first so edited sync settings apply right away (cache for offline).
+  if (url.origin === self.location.origin && url.pathname.endsWith("/config.js")) {
+    e.respondWith(
+      fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(req))
+    );
+    return;
+  }
 
   // Same-origin app shell: cache-first, then network.
   if (url.origin === self.location.origin) {

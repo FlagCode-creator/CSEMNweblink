@@ -60,16 +60,25 @@
   }
 
   // ---------- sync (Google Sheet via Apps Script) ----------
+  // Baked-in default from config.js (auto-sync on every device, no manual setup)
+  function defaultSync() {
+    const c = window.LINKHOME_CONFIG;
+    return c && c.syncUrl ? { url: c.syncUrl, token: c.syncToken || "" } : null;
+  }
   function loadSync() {
     try {
       const raw = localStorage.getItem(SYNC_KEY);
-      sync = raw ? JSON.parse(raw) : null;
-      if (sync && !sync.url) sync = null;
-    } catch { sync = null; }
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed === "off") { sync = null; return; }        // user turned it off
+        if (parsed && parsed.url) { sync = parsed; return; }   // user's own override
+      }
+    } catch {}
+    sync = defaultSync();   // no saved choice → use auto-sync config if present
   }
   function saveSync() {
     if (sync) localStorage.setItem(SYNC_KEY, JSON.stringify(sync));
-    else localStorage.removeItem(SYNC_KEY);
+    else localStorage.setItem(SYNC_KEY, JSON.stringify("off")); // remember "off" so config doesn't re-enable
   }
   function setSyncStatus(state, msg) {
     // state: "off" | "ok" | "busy" | "err"

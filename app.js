@@ -106,9 +106,16 @@
     setSyncStatus("busy", "กำลังดึงข้อมูลจากคลาวด์…");
     try {
       const data = await apiCall({ action: "list" });
-      items = (data.items || [])
+      const remote = (data.items || [])
         .filter((x) => x && (x.name || x.url))
         .map((x) => ({ id: x.id || uid(), name: String(x.name || ""), url: normalizeUrl(x.url), icon: x.icon || "" }));
+      // Safety: if the cloud is empty but this device has links, seed the cloud
+      // instead of wiping local data (avoids data loss on first-time sync).
+      if (!remote.length && items.length) {
+        await push();
+        return;
+      }
+      items = remote;
       save();
       render();
       setSyncStatus("ok", "ซิงก์แล้ว • " + timeNow());

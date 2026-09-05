@@ -1,7 +1,7 @@
 {
-  "name": "Link Home — หน้าจอรวมลิงก์",
-  "short_name": "Link Home",
-  "description": "หน้าจอโฮมรวมลิงก์ส่วนตัว เพิ่มไอคอนและลิงก์เองได้",
+  "name": "Link CSEMN By KruFlag",
+  "short_name": "Link CSEMN",
+  "description": "หน้าจอโฮมรวมลิงก์ CSEMN By KruFlag เพิ่มไอคอนและลิงก์เองได้",
   "lang": "th",
   "start_url": "./",
   "scope": "./",

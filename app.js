@@ -645,6 +645,16 @@
   $("#closeHelp").addEventListener("click", () => helpDialog.close());
   $("#helpOk").addEventListener("click", () => helpDialog.close());
 
+  // show the logo image in the header if icons/logo.png exists; else keep the dot
+  const brandLogo = $("#brandLogo");
+  const brandDot = document.querySelector(".brand-dot");
+  if (brandLogo) {
+    const useLogo = () => { brandLogo.hidden = false; if (brandDot) brandDot.hidden = true; };
+    brandLogo.addEventListener("load", useLogo);
+    brandLogo.addEventListener("error", () => { brandLogo.hidden = true; });
+    if (brandLogo.complete && brandLogo.naturalWidth > 0) useLogo();
+  }
+
   menu.addEventListener("click", (e) => {
     const action = e.target.dataset.action;
     if (!action) return;

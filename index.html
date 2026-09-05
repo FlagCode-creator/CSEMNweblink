@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0f1020" />
   <meta name="description" content="หน้าจอโฮมรวมลิงก์ส่วนตัว — เพิ่มไอคอนและลิงก์เองได้ ใช้เป็นเว็บแอพบนหน้าจอโฮมได้" />
 
-  <title>Link Home — หน้าจอรวมลิงก์</title>
+  <title>Link CSEMN By KruFlag — หน้าจอรวมลิงก์</title>
 
   <!-- speed: warm up the sync backend connection + fetch app scripts early -->
   <link rel="preconnect" href="https://script.google.com" crossorigin />
@@ -21,7 +21,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Link Home" />
+  <meta name="apple-mobile-web-app-title" content="Link CSEMN" />
 
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -31,8 +31,9 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
+        <img id="brandLogo" class="brand-logo" src="icons/icon-192.png" alt="" hidden />
         <span class="brand-dot"></span>
-        <h1 id="pageTitle">Link Home</h1>
+        <h1 id="pageTitle">Link CSEMN <span class="brand-by">By KruFlag</span></h1>
         <span id="syncDot" class="sync-dot" title="สถานะซิงก์" hidden></span>
       </div>
 
@@ -76,7 +77,7 @@
       </div>
     </div>
 
-    <footer class="credit">Link Home · By KruFlag</footer>
+    <footer class="credit">Link CSEMN · By KruFlag</footer>
   </main>
 
   <button id="fabAdd" class="fab" title="เพิ่มลิงก์" aria-label="เพิ่มลิงก์">
